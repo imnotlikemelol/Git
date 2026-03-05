@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kamera Filmowa</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .camera-view {
+            width: 800px;
+            height: 800px;
+            background: linear-gradient(135deg, #1a1a2e 0%, #0f0f1e 100%);
+            position: relative;
+            border: 3px solid #333;
+        }
+
+        /* Czerwony punkt REC */
+        .rec-indicator {
+            position: absolute;
+            top: 30px;
+            left: 30px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .rec-dot {
+            width: 20px;
+            height: 20px;
+            background: #ff0000;
+            border-radius: 50%;
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        .rec-text {
+            color: #ff0000;
+            font-family: 'Courier New', monospace;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        /* Znaczniki ramki */
+        .frame-corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255, 255, 255, 0.7);
+        }
+
+        .corner-tl {
+            top: 20px;
+            left: 20px;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .corner-tr {
+            top: 20px;
+            right: 20px;
+            border-left: none;
+            border-bottom: none;
+        }
+
+        .corner-bl {
+            bottom: 20px;
+            left: 20px;
+            border-right: none;
+            border-top: none;
+        }
+
+        .corner-br {
+            bottom: 20px;
+            right: 20px;
+            border-left: none;
+            border-top: none;
+        }
+
+        /* Celownik centralny */
+        .crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+        }
+
+        .crosshair::before,
+        .crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.5);
+        }
+
+        .crosshair::before {
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            transform: translateY(-50%);
+        }
+
+        .crosshair::after {
+            left: 50%;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            transform: translateX(-50%);
+        }
+
+        .crosshair-circle {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            height: 100%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+        }
+
+        /* Informacje na dole */
+        .info-bar {
+            position: absolute;
+            bottom: 25px;
+            left: 30px;
+            right: 30px;
+            display: flex;
+            justify-content: space-between;
+            color: rgba(255, 255, 255, 0.8);
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+        }
+
+        .timecode {
+            color: #fff;
+        }
+
+        .battery {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .battery-icon {
+            width: 30px;
+            height: 16px;
+            border: 2px solid #fff;
+            border-radius: 2px;
+            position: relative;
+            padding: 2px;
+        }
+
+        .battery-icon::before {
+            content: '';
+            position: absolute;
+            right: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 8px;
+            background: #fff;
+            border-radius: 0 2px 2px 0;
+        }
+
+        .battery-fill {
+            width: 100%;
+            height: 100%;
+            background: #00ff00;
+        }
+
+        /* Kratka pomocnicza (rule of thirds) */
+        .grid-line {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .grid-h1 {
+            top: 33.33%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+        }
+
+        .grid-h2 {
+            top: 66.66%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+        }
+
+        .grid-v1 {
+            left: 33.33%;
+            top: 0;
+            height: 100%;
+            width: 1px;
+        }
+
+        .grid-v2 {
+            left: 66.66%;
+            top: 0;
+            height: 100%;
+            width: 1px;
+        }
+
+        /* Vignette effect */
+        .vignette {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle at center, 
+                transparent 0%, 
+                transparent 50%, 
+                rgba(0, 0, 0, 0.5) 100%);
+            pointer-events: none;
+        }
+
+        /* Parametry kamery */
+        .camera-settings {
+            position: absolute;
+            top: 80px;
+            right: 30px;
+            text-align: right;
+            color: rgba(255, 255, 255, 0.7);
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <div class="camera-view">
+        <!-- Wskaźnik nagrywania -->
+        <div class="rec-indicator">
+            <div class="rec-dot"></div>
+            <div class="rec-text">REC</div>
+        </div>
+
+        <!-- Rogi ramki -->
+        <div class="frame-corner corner-tl"></div>
+        <div class="frame-corner corner-tr"></div>
+        <div class="frame-corner corner-bl"></div>
+        <div class="frame-corner corner-br"></div>
+
+        <!-- Kratka pomocnicza -->
+        <div class="grid-line grid-h1"></div>
+        <div class="grid-line grid-h2"></div>
+        <div class="grid-line grid-v1"></div>
+        <div class="grid-line grid-v2"></div>
+
+        <!-- Celownik -->
+        <div class="crosshair">
+            <div class="crosshair-circle"></div>
+        </div>
+
+        <!-- Ustawienia kamery -->
+        <div class="camera-settings">
+            <div>4K 24fps</div>
+            <div>ISO 400</div>
+            <div>F/2.8</div>
+            <div>1/50</div>
+        </div>
+
+        <!-- Pasek informacji -->
+        <div class="info-bar">
+            <div class="timecode">00:15:47</div>
+            <div class="battery">
+                <div class="battery-icon">
+                    <div class="battery-fill"></div>
+                </div>
+                <span>87%</span>
+            </div>
+        </div>
+
+        <!-- Vignette -->
+        <div class="vignette"></div>
+    </div>
+</body>
+</html>
